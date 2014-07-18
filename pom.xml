@@ -23,8 +23,6 @@
     </repository>
   </repositories>
   <build>
-    
-
     <sourceDirectory>src/main/java</sourceDirectory>
     <testSourceDirectory>src/test/java</testSourceDirectory>
 
@@ -58,8 +56,7 @@
           </archive>
         </configuration>
       </plugin>
-
-<plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.3</version>
@@ -90,32 +87,32 @@
   </build>
 
   <dependencies>
+    <dependency>
+      <groupId>com.itextpdf</groupId>
+      <artifactId>itextpdf</artifactId>
+      <version>5.0.6</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpclient</artifactId>
+      <version>4.3.4</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>4.3.2</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.pdfbox</groupId>
+      <artifactId>pdfbox</artifactId>
+      <version>1.8.6</version>
+    </dependency>
+    <dependency>
+      <groupId>com.sanityinc</groupId>
+      <artifactId>jargs</artifactId>
+      <version>2.0-SNAPSHOT</version>
+    </dependency>
     
-<dependency>
-	<groupId>com.itextpdf</groupId>
-	<artifactId>itextpdf</artifactId>
-	<version>5.0.6</version>
-</dependency>
-<dependency>
-	<groupId>org.apache.httpcomponents</groupId>
-	<artifactId>httpclient</artifactId>
-	<version>4.3.4</version>
-</dependency>
-<dependency>
-	<groupId>org.apache.httpcomponents</groupId>
-	<artifactId>httpcore</artifactId>
-	<version>4.3.2</version>
-</dependency>
-<dependency>
-	<groupId>org.apache.pdfbox</groupId>
-	<artifactId>pdfbox</artifactId>
-	<version>1.8.6</version>
-</dependency>
-<dependency>
-  <groupId>com.sanityinc</groupId>
-  <artifactId>jargs</artifactId>
-  <version>2.0-SNAPSHOT</version>
-</dependency>
     <!-- Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
