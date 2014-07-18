@@ -1,11 +1,8 @@
-Testing
+Introduction
 =====================================================
 
-Extended test data (in the form of lots of PDFs)
-can be inserted as a git submodule. You will need
-git access on labs.crossref.org to access the
-PDF test data repository. If you do, just perform
-this command to put the data into your local
-repository:
+pdfxmp is a tool for manipulating xmp embedded metadata in
+PDF files. pdfxmp is a fork from CrossRef/pdfmark. The function of
+saving a bibtex entry into a PDF as xmp format from JabRef will be
+incoroperated into pdfxmp later.
 
-$ git submodule update --init
