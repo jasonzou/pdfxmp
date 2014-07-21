@@ -46,14 +46,15 @@ public class Main {
 	private MetadataGrabber grabber;
 	
 	public static void printUsage() {
-		System.err.println("Usage: pdfxmp" +
-				" [{-f, --force}]" +
-				" [{-p, --xmp-file} xmp_file]" +
-				" [{-o, --output-dir} output_dir] " +
-				" [{-d, --doi} doi]" + 
-				" [--no-copyright]" + 
-				" [--rights-agent rights_agent_str]" +
-				" [--api-key search_key]" + 
+		System.err.println("Usage: pdfxmp [options] pdf_file\n" +
+				"Options: \n" + 
+				" [{-f, --force}]\n" +
+				" [{-p, --xmp-file} xmp_file]\n" +
+				" [{-o, --output-dir} output_dir]\n" +
+				" [{-d, --doi} doi]\n" + 
+				" [--no-copyright]\n" + 
+				" [--rights-agent rights_agent_str]\n" +
+				" [--api-key search_key]\n" + 
 				" pdf_files");
 	}
 	
