@@ -1,3 +1,0 @@
-[submodule "test-data/extended"]
-	path = test-data/extended
-	url = git@labs.crossref.org:pdf-test-data.git
