@@ -7,38 +7,145 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
-import com.itextpdf.text.pdf.PdfReader;
+import org.apache.pdfbox.exceptions.InvalidPasswordException;
+import org.apache.pdfbox.exceptions.CryptographyException;
 
+import org.apache.pdfbox.pdfparser.PDFParser;
+ 
+ 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.common.PDMetadata;
+ 
+import java.io.FileInputStream;
+import java.io.IOException;
+ 
+import java.text.SimpleDateFormat;
+ 
+import java.util.Calendar;
+ 
 /**
- * Utility that dumps XMP data of a PDF to standard out.
+ * This is an example on how to get a documents metadata information.
+ *
+ * Usage: java org.apache.pdfbox.examples.pdmodel.PrintDocumentMetaData <input-pdf>
+ *
+ * @author <a href="mailto:ben@benlitchfield.com">Ben Litchfield</a>
+ * @version $Revision: 1.11 $
  */
-public class DumperMain {
+public class DumperMain
+{
+    /**
+     * This will print the documents data.
+     *
+     * @param args The command line arguments.
+     *
+     * @throws Exception If there is an error parsing the document.
+     */
+    public static void main( String[] args ) throws Exception
+    {
+        if( args.length != 1 )
+        {
+            usage();
+        }
+        else
+        {
+            PDDocument document = null;
+            FileInputStream file = null;
+            try
+            {
+                file = new FileInputStream( args[0] );
+                PDFParser parser = new PDFParser( file );
+                parser.parse();
+                document = parser.getPDDocument();
+                if( document.isEncrypted() )
+                {
+                    try
+                    {
+                        document.decrypt( "" );
+                    }
+                    catch( CryptographyException e)
+                    {
+                        System.err.println( "Error: Document is encrypted with a password." );
+                        System.exit( 1 );
+                    }
+                    catch(Exception e)
+                    {
+                        System.err.println( "Error: Document is encrypted with a password." );
+                        System.exit( 1 );
+                    }
 
-    public static void main(String[] args) {
-        for (String filename : args) {
-            
-            File f = new File(filename);
-            FileInputStream fileIn;
-            PdfReader reader;
-            
-            try {
-                fileIn = new FileInputStream(f);
-                reader = new PdfReader(fileIn);
-                byte[] merged = reader.getMetadata();
-                ByteArrayInputStream bIn = new ByteArrayInputStream(merged);
-                BufferedReader bR = new BufferedReader(new InputStreamReader(bIn));
-                String line;
-                while ((line = bR.readLine()) != null) {
-                    System.out.println(line);
                 }
                 
-                reader.close();
-                fileIn.close();
-            } catch (IOException e) {
-                System.err.println("Couldn't read file '" + filename + "'.");
-                System.err.println(e);
+                DumperMain meta = new DumperMain();
+                meta.printMetadata( document );
+            }
+            finally
+            {
+                if( file != null )
+                {
+                    file.close();
+                }
+                if( document != null )
+                {
+                    document.close();
+                }
             }
         }
     }
-    
+ 
+    /**
+     * This will print the usage for this document.
+     */
+    private static void usage()
+    {
+        System.err.println( "Usage: java org.apache.pdfbox.examples.pdmodel.PrintDocumentMetaData <input-pdf>" );
+    }
+ 
+    /**
+     * This will print the documents data to System.out.
+     *
+     * @param document The document to get the metadata from.
+     *
+     * @throws IOException If there is an error getting the page count.
+     */
+    public void printMetadata( PDDocument document ) throws IOException
+    {
+        PDDocumentInformation info = document.getDocumentInformation();
+        PDDocumentCatalog cat = document.getDocumentCatalog();
+        PDMetadata metadata = cat.getMetadata();
+        System.out.println( "Page Count=" + document.getNumberOfPages() );
+        System.out.println( "Title=" + info.getTitle() );
+        System.out.println( "Author=" + info.getAuthor() );
+        System.out.println( "Subject=" + info.getSubject() );
+        System.out.println( "Keywords=" + info.getKeywords() );
+        System.out.println( "Creator=" + info.getCreator() );
+        System.out.println( "Producer=" + info.getProducer() );
+        System.out.println( "Creation Date=" + formatDate( info.getCreationDate() ) );
+        System.out.println( "Modification Date=" + formatDate( info.getModificationDate() ) );
+        System.out.println( "Trapped=" + info.getTrapped() );
+        if( metadata != null )
+        {
+            System.out.println( "Metadata=" + metadata.getInputStreamAsString() );
+        }
+    }
+ 
+    /**
+     * This will format a date object.
+     *
+     * @param date The date to format.
+     *
+     * @return A string representation of the date.
+     */
+    private String formatDate( Calendar date )
+    {
+        String retval = null;
+        if( date != null )
+        {
+            SimpleDateFormat formatter = new SimpleDateFormat();
+            retval = formatter.format( date.getTime() );
+        }
+ 
+        return retval;
+    }
 }

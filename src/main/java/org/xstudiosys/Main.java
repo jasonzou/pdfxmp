@@ -34,16 +34,10 @@ import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 
-import com.itextpdf.text.DocumentException;
-import com.itextpdf.text.pdf.PdfReader;
-import com.itextpdf.text.pdf.PdfStamper;
-import com.itextpdf.text.pdf.PdfWriter;
-import com.itextpdf.text.xml.xmp.XmpSchema;
-
-
 public class Main {
 	
-	private MetadataGrabber grabber;
+	//private MetadataGrabber grabber;
+	//doi grabber?
 	
 	public static void printUsage() {
 		System.err.println("Usage: pdfxmp [options] pdf_file\n" +
@@ -52,9 +46,6 @@ public class Main {
 				" [{-p, --xmp-file} xmp_file]\n" +
 				" [{-o, --output-dir} output_dir]\n" +
 				" [{-d, --doi} doi]\n" + 
-				" [--no-copyright]\n" + 
-				" [--rights-agent rights_agent_str]\n" +
-				" [--api-key search_key]\n" + 
 				" pdf_files");
 	}
 	
@@ -66,9 +57,6 @@ public class Main {
 				" [{-o, --output-dir} output_dir] " +
 				" [{-d, --doi} doi]" + 
 				" [{-s, --search-for-doi]" + 
-				" [--no-copyright]" + 
-				" [--rights-agent rights_agent_str]" +
-				" [--api-key search_key]" + 
 				" pdf_files");
 	}
 
@@ -76,10 +64,7 @@ public class Main {
 		new Main(args);
 	}
 	
-	private void shutDown() {
-		grabber.shutDown();
-	}
-	
+
 	public Main(String[] args) {
 		if (args.length == 0) {
 			printUsage();
@@ -92,9 +77,6 @@ public class Main {
 		Option outputOp = parser.addStringOption('o', "output-dir");
 		Option doiOp = parser.addStringOption('d', "doi");
 		Option searchOp = parser.addBooleanOption('s', "search-for-doi");
-		Option copyrightOp = parser.addBooleanOption("no-copyright");
-		Option rightsOp = parser.addStringOption("rights-agent");
-		Option apiKeyOp = parser.addStringOption("api-key");
 		
 		try {
 			parser.parse(args);
@@ -107,18 +89,12 @@ public class Main {
 				                 parser.getOptionValue(provideXmpOp, "");
 		String outputDir       = (String) 
 		 			             parser.getOptionValue(outputOp, "");
-		String explicitDoi     = (String) 
+		String explicitDoi     = (String)
 		                         parser.getOptionValue(doiOp, "");
 		boolean useTheForce    = (Boolean) 
 		                         parser.getOptionValue(overwriteOp, Boolean.FALSE);
 		boolean searchForDoi   = (Boolean) 
 		                         parser.getOptionValue(searchOp, Boolean.FALSE);
-		boolean noCopyright    = (Boolean)
-								 parser.getOptionValue(copyrightOp, Boolean.FALSE);
-		String rightsAgent     = (String)
-		 						 parser.getOptionValue(rightsOp, "");
-		String apiKey          = (String)
-		 						 parser.getOptionValue(apiKeyOp, ApiKey.DEFAULT);
 		
 		if (!explicitDoi.equals("") && searchForDoi) {
 			exitWithError(2, "-d and -s are mutually exclusive options.");
@@ -145,8 +121,7 @@ public class Main {
 			optionalXmpData = xmpFile.data;
 		}
 		
-		grabber = new MetadataGrabber(apiKey);
-		
+
 		/* Now we're ready to merge our imported or generated XMP data with what
 		 * is already in each PDF. */
 		
@@ -168,7 +143,7 @@ public class Main {
 			File pdfFile = new File(pdfFilePath);
 			File outputFile = new File(outputPath);
 			
-			byte[] resolvedXmpData = null;
+			String resolvedXmpData = "";
 			
 			if (!pdfFile.exists()) {
 				exitWithError(2, "Error: File '" + pdfFilePath 
@@ -193,9 +168,7 @@ public class Main {
 			}
 			
 			if (!explicitDoi.equals("")) {
-				resolvedXmpData = getXmpForDoi(explicitDoi, 
-						                       !noCopyright, 
-						                       rightsAgent);
+				resolvedXmpData = getXmpForDoi(explicitDoi);
 			}
 			
 			try {
@@ -203,42 +176,38 @@ public class Main {
 				
 				FileInputStream fileIn = new FileInputStream(pdfFile);
 				FileOutputStream fileOut = new FileOutputStream(outputFile.getPath() + ".tmp");
-				PdfReader reader = new PdfReader(fileIn);
-				PdfStamper stamper = new PdfStamper(reader, fileOut);
+				//PdfReader reader = new PdfReader(fileIn);
+				//PdfStamper stamper = new PdfStamper(reader, fileOut);
 				
-				byte[] merged = reader.getMetadata();
+				//byte[] merged = reader.getMetadata();
 				
-				if (optionalXmpData != null) {
-					merged = XmpUtils.mergeXmp(merged, optionalXmpData);
-				}
+				//if (optionalXmpData != null) {
+			//		merged = XmpUtils.mergeXmp(merged, optionalXmpData);
+				//}
 				
-				if (resolvedXmpData != null) {
-					merged = XmpUtils.mergeXmp(merged, resolvedXmpData);
-				}
+				//if (resolvedXmpData != null) {
+					//merged = XmpUtils.mergeXmp(merged, resolvedXmpData);
+				//}
 
-				stamper.setXmpMetadata(merged);
+				//stamper.setXmpMetadata(merged);
 				
-				stamper.close();
-				reader.close();
+				//stamper.close();
+				//reader.close();
 				
-				fileIn = new FileInputStream(outputFile.getPath() + ".tmp");
-				writeInfoDictionary(fileIn, outputFile.getPath(), merged);
+				//fileIn = new FileInputStream(outputFile.getPath() + ".tmp");
+				//writeInfoDictionary(fileIn, outputFile.getPath(), merged);
 			} catch (IOException e) {
-				exitWithError(2, "Error: Couldn't handle '" + pdfFilePath 
-						+ "' because of:\n" + e);
-			} catch (DocumentException e) {
 				exitWithError(2, "Error: Couldn't handle '" + pdfFilePath 
 						+ "' because of:\n" + e);
 			} catch (XmpException e) {
 				exitWithError(2, "Error: Couldn't handle '" + pdfFilePath
 						+ "' because of:\n" + e);
-			} catch (COSVisitorException e) {
+			} catch (Exception e) {
 				exitWithError(2, "Error: Couldn't write document info dictionary"
 						+ " because of:\n" + e);
 			}
 		}
 		
-		shutDown();
 	}
 	
 	public static void writeInfoDictionary(FileInputStream in, 
@@ -249,11 +218,11 @@ public class Main {
 	
 		PDDocument document = parser.getPDDocument();
 		PDDocumentInformation info = document.getDocumentInformation();
-		
+		/*
 		for (Entry<String, String> entry : XmpUtils.toInfo(xmp).entrySet()) {
 			info.setCustomMetadataValue(entry.getKey(), entry.getValue());
 		}
-		
+		*/
 		document.setDocumentInformation(info);
 		document.save(outputFile);
 		document.close();
@@ -296,25 +265,11 @@ public class Main {
 		return isLinear;
 	}
 	
-	private byte[] getXmpForDoi(String doi, boolean genCr, String agent) {
-		MarkBuilder builder = new MarkBuilder(genCr, agent) {
-			@Override
-			public void onFailure(String doi, int code, String msg) {
-				if (code == MetadataGrabber.CRUMMY_XML_CODE) {
-					exitWithError(2, "Failed to parse metadata XML because of:\n" 
-							+ code + ": " + msg);
-				} else {
-					System.err.println();
-					exitWithError(2, "Failed to retreive metadata because of:\n" 
-							+ code + ": " + msg);
-				}
-			}
-		};
-		grabber.grabOne(doi, builder);
-		System.out.println("Grabbing metadata for '" + doi + "'...");
-		grabber.waitForEmpty();
+	private String getXmpForDoi(String doi) {
+		MarkBuilder builder = new MarkBuilder();
 		
-		return builder.getXmpData();
+		return " ";
+		//builder.getXmpData();
 	}
 	
 	private static String getOutFileName(String pdfFileName) {
@@ -327,7 +282,7 @@ public class Main {
 	}
 	
 	private void exitWithError(int code, String error) {
-		shutDown();
+		
 		System.err.println();
 		System.err.println(error);
 		System.exit(code);

@@ -88,11 +88,6 @@
 
   <dependencies>
     <dependency>
-      <groupId>com.itextpdf</groupId>
-      <artifactId>itextpdf</artifactId>
-      <version>5.0.6</version>
-    </dependency>
-    <dependency>
       <groupId>org.apache.httpcomponents</groupId>
       <artifactId>httpclient</artifactId>
       <version>4.3.4</version>
@@ -107,6 +102,12 @@
       <artifactId>pdfbox</artifactId>
       <version>1.8.6</version>
     </dependency>
+<dependency>
+	<groupId>org.apache.pdfbox</groupId>
+	<artifactId>jempbox</artifactId>
+	<version>1.8.6</version>
+</dependency>
+
     <dependency>
       <groupId>com.sanityinc</groupId>
       <artifactId>jargs</artifactId>

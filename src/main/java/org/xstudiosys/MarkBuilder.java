@@ -24,15 +24,20 @@ import java.net.URISyntaxException;
 
 import javax.xml.xpath.XPathExpressionException;
 
-import org.xstudiosys.pdfxmp.prism.Prism21Schema;
-import org.xstudiosys.pdfxmp.pub.Publisher;
-import org.xstudiosys.pdfxmp.unixref.Unixref;
-import org.xstudiosys.pdfxmp.unixref.Work;
+import org.apache.jempbox.xmp.XMPMetadata;
+import org.apache.jempbox.xmp.XMPSchemaBasic;
+import org.apache.jempbox.xmp.XMPSchemaDublinCore;
+import org.apache.jempbox.xmp.XMPSchemaPDF;
+ 
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDDocumentCatalog;
+import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.apache.pdfbox.pdmodel.common.PDMetadata;
 
-import com.itextpdf.text.xml.xmp.DublinCoreSchema;
-import com.itextpdf.text.xml.xmp.XmpWriter;
+ 
+import java.util.GregorianCalendar;
 
-public abstract class MarkBuilder implements MetadataGrabber.Handler {
+public class MarkBuilder {
 
 	private static URI DOI_RESOLVER;
 	static {
@@ -43,93 +48,40 @@ public abstract class MarkBuilder implements MetadataGrabber.Handler {
 		}
 	}
 	
-	private byte[] xmpData;
-	
-	private Unixref unixref;
-	
-	private Publisher publisher;
-	
-	private boolean generateCopyright;
-	
-	private String rightsAgent;
-	
-	public MarkBuilder(boolean generateCopyright, String rightsAgent) {
-		this.generateCopyright = generateCopyright;
-		this.rightsAgent = rightsAgent;
+	public void onComplete(PDDocument document) {
+		  try {
+					 
+		  PDDocumentCatalog catalog = document.getDocumentCatalog();
+        PDDocumentInformation info = document.getDocumentInformation();
+		  
+		  XMPMetadata metadata = new XMPMetadata();
+		  
+		  XMPSchemaPDF pdfSchema = metadata.addPDFSchema();
+		  pdfSchema.setKeywords( info.getKeywords() );
+		  pdfSchema.setProducer( info.getProducer() );
+ 
+		  XMPSchemaBasic basicSchema = metadata.addBasicSchema();
+		  basicSchema.setModifyDate( info.getModificationDate() );
+		  basicSchema.setCreateDate( info.getCreationDate() );
+		  basicSchema.setCreatorTool( info.getCreator() );
+		  basicSchema.setMetadataDate( new GregorianCalendar() );
+		  
+        XMPSchemaDublinCore dcSchema = metadata.addDublinCoreSchema();
+		  dcSchema.setTitle( info.getTitle() );
+		  dcSchema.addCreator( "PDFBox" );
+		  dcSchema.setDescription( info.getSubject() );
+		  
+        PDMetadata metadataStream = new PDMetadata(document);
+		  metadataStream.importXMPMetadata( metadata );
+		  catalog.setMetadata( metadataStream );
+		  } catch (Exception e) {
+             e.printStackTrace();
+		  }
 	}
 	
-	@Override
-	public void onMetadata(String requestedDoi, Unixref unixref) {
-		this.unixref = unixref;
-	}
-	
-	@Override
-	public void onPublisher(String requestedDoi, Publisher pub) {
-		this.publisher = pub;
-	}
-	
-	@Override
-	public void onComplete(String requestedDoi) {
-		ByteArrayOutputStream bout = new ByteArrayOutputStream();
-		SchemaSet schemaSet = new SchemaSet();
-		
-		try {
-		    Work work = null;
-		    
-		    switch (unixref.getType()) {
-	        case JOURNAL:
-	            work = unixref.getJournal();
-	            break;
-	        case BOOK:
-	            work = unixref.getBook();
-	            break;
-	        default:
-	            break;
-	        }
-		    
-		    if (work != null) {
-		        XmpWriter writer = new XmpWriter(bout);
-		        
-		        work.writeXmp(schemaSet);
-		    
-    		    if (publisher != null) {
-    	            if (generateCopyright) {
-    	                String cp = getCopyright(work);
-    	                Work.addToSchema(schemaSet.getDc(), DublinCoreSchema.RIGHTS, cp);
-    	                Work.addToSchema(schemaSet.getPrism(), Prism21Schema.COPYRIGHT, cp);
-    	            }
-    	            Work.addToSchema(schemaSet.getDc(), DublinCoreSchema.PUBLISHER, 
-    	                             publisher.getName());
-    	        }
-    		    
-    		    Work.addToSchema(schemaSet.getPrism(), Prism21Schema.RIGHTS_AGENT, 
-    		                     rightsAgent);
-    		    
-    		    writer.addRdfDescription(schemaSet.getDc());
-                writer.addRdfDescription(schemaSet.getPrism());
-                writer.close();
-		    }
-		    
-		    xmpData = bout.toByteArray();
-		} catch (IOException e) {
-            onFailure(requestedDoi, MetadataGrabber.CLIENT_EXCEPTION_CODE,
-                      e.toString());
-        } catch (XPathExpressionException e) {
-            onFailure(requestedDoi, MetadataGrabber.CLIENT_EXCEPTION_CODE,
-                      e.toString());
-        }
-	}
-	
-    private String getCopyright(Work work) throws XPathExpressionException {
-        return "(C) " + work.getYear() + " " + publisher.getName();
-    }
 	
 	public static String getUrlForDoi(String doi) {
         return DOI_RESOLVER.resolve(doi).toString();
-    }
-	
-	public byte[] getXmpData() {
-        return xmpData;
     }
 
 }
