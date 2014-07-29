@@ -25,6 +25,9 @@ import java.io.FileOutputStream;
 import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.Map.Entry;
+import java.io.*;
+import java.util.*;
+
 
 import org.apache.pdfbox.cos.COSDictionary;
 import org.apache.pdfbox.cos.COSDocument;
@@ -37,6 +40,11 @@ import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.xstudiosys.pdfxmp.PDFTextParser;
 import org.xstudiosys.pdfxmp.XMPUtil;
 import org.xstudiosys.pdfxmp.DOItoBibTeXFetcher;
+
+import net.sf.jabref.*;
+import net.sf.jabref.imports.BibtexParser;
+import net.sf.jabref.imports.ParserResult;
+import net.sf.jabref.export.LatexFieldFormatter;
 
 
 import java.security.DigestInputStream;
@@ -77,6 +85,7 @@ public class Main{
 	public static void main(String[] args) {
 		new Main(args);
 	}
+	
 	
 	public Main(String[] args){
 		if (args.length == 0) {
@@ -168,13 +177,49 @@ public class Main{
 		
 		// print bibtex from a pdf's xmp
 		if (bibOpValue){
-			
+			try{
+				List<BibtexEntry> l = XMPUtil.readXMP(new File(pdf_file));
+				for (BibtexEntry e : l) {
+					StringWriter sw = new StringWriter();
+					e.write(sw, new LatexFieldFormatter(),false);
+					System.out.println(sw.getBuffer().toString());
+				}
+			}catch(Exception e){
+				e.printStackTrace();
+			}
 			System.exit(0);
 		}
 		
 		// auto convert
 		if (autoOpValue){
-			
+			String doiString = PDFTextParser.pdfdoi(pdf_file);
+			if (doiString == null || doiString.trim().equals("")){
+				System.out.println("No DOI has found in this PDF file.");
+			}else{
+				System.out.println("DOI: " + doiString);
+				System.out.println("========== Retrieving Bibtex entry for DOI ======== ");
+				DOItoBibTeXFetcher test = new DOItoBibTeXFetcher();
+				String bibtex = test.getEntryFromDOI(doiString);
+				
+				if (bibtex == null || bibtex.trim().equals("")){
+					System.out.println("Can not find the bibtex entry from DOI.");
+				}else{
+					System.out.println(bibtex);
+							
+					try{
+						BibtexEntry result = BibtexParser.singleFromString(bibtex);
+					
+						if (result == null) {
+							System.err.println("Could not find a valid BibtexEntry ");
+						} else {
+							XMPUtil.writeXMP(new File(pdf_file), result, null);
+							System.out.println("XMP written.");
+						}
+					}catch(Exception e){
+						e.printStackTrace();
+					}
+				}
+			}
 			System.exit(0);
 		}
 		
