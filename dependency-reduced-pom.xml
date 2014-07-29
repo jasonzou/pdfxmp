@@ -70,6 +70,10 @@
       <id>sonatype-oss-public</id>
       <url>https://oss.sonatype.org/content/groups/public/</url>
     </repository>
+    <repository>
+      <id>ironiacorp</id>
+      <url>http://www.ironiacorp.com/repo/maven2</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
