@@ -1,0 +1,2 @@
+mvn install:install-file -Dfile=<path-to-file> -DgroupId=net.sf
+    -DartifactId=jabref -Dversion=2.10 -Dpackaging=JabRef
