@@ -36,6 +36,7 @@ import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
 import org.xstudiosys.pdfxmp.PDFTextParser;
 import org.xstudiosys.pdfxmp.XMPUtil;
+import org.xstudiosys.pdfxmp.DOItoBibTeXFetcher;
 
 
 import java.security.DigestInputStream;
@@ -144,7 +145,23 @@ public class Main{
 		}
 		
 		// search for doi and bibtex
+		// log4j? to-do list
 		if (doiOpValue){
+			String doiString = PDFTextParser.pdfdoi(pdf_file);
+			if (doiString == null || doiString.trim().equals("")){
+				System.out.println("No DOI has found in this PDF file.");
+			}else{
+				System.out.println("DOI: " + doiString);
+				System.out.println("========== Retrieving Bibtex entry for DOI ======== ");
+				DOItoBibTeXFetcher test = new DOItoBibTeXFetcher();
+				String bibtex = test.getEntryFromDOI(doiString);
+				
+				if (bibtex == null || bibtex.trim().equals("")){
+					System.out.println("Can not find the bibtex entry from DOI.");
+				}else{
+					System.out.println(bibtex);
+				}
+			}
 			
 			System.exit(0);
 		}
