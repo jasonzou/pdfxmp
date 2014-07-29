@@ -190,5 +190,65 @@ public class PDFTextParser {
 		System.out.println("------------------------");
 		getPDFXmpMeta("./test.pdf");
 	}
+	
+	/*
+		public String extractTitle() throws IOException {
+		int TITLE_MIN_LENGTH = 2;
+		String title = null;
+		try {
+			PDPage page = getPDDocument(getDocument()).getPageTree().getFirstPage();
+			if (page.isPage()) {
+				try {
+					if(!page.cosGetContents().basicIterator().hasNext()) {
+						page = page.getNextPage();
+					}
+									
+					TreeMap<PdfTextEntity, StringBuilder> map = tryTextExtraction(page);
+					Entry<PdfTextEntity, StringBuilder> entry = map.firstEntry();
+					if(entry == null) {
+						OCRTextExtractor handler = new OCRTextExtractor(file);
+						//tryImageExtraction(page, handler);
+						map = handler.getMap();
+						entry = map.firstEntry();
+						if(entry == null) {
+							COSInfoDict info = getDocument().getInfoDict();
+							title = info.getTitle();
+						}
+					}
+					else {
+						title = entry.getValue().toString().trim();
+						while(title.trim().length() < TITLE_MIN_LENGTH || isNumber(title)) {
+							entry = map.higherEntry(entry.getKey());
+							if(entry == null) {
+								break;
+							}
+							title = entry.getValue().toString().trim();
+						}
+						if(title.trim().length() < TITLE_MIN_LENGTH || isNumber(title)) {
+							title = null;
+						}
+					}
+					//System.out.println(map);
+				}
+				catch (Exception ex) {
+					COSInfoDict info = getDocument().getInfoDict();
+					if (info != null) {
+						title = info.getTitle();
+					}
+				}
+			}
+		}
+		finally {
+			close();
+		}
+		if(title != null) {
+			try {
+				title = filter.filter(title);
+			} catch (IOException e) {
+			}
+		}
+		return title;
+	}
+	*/
 
 }
