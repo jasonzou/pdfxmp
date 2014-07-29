@@ -22,6 +22,7 @@ import com.sanityinc.jargs.CmdLineParser.Option;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.util.Map.Entry;
 
@@ -33,50 +34,65 @@ import org.apache.pdfbox.exceptions.COSVisitorException;
 import org.apache.pdfbox.pdfparser.PDFParser;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.pdmodel.PDDocumentInformation;
+import org.xstudiosys.pdfxmp.PDFTextParser;
+import org.xstudiosys.pdfxmp.XMPUtil;
 
-public class Main {
+
+import java.security.DigestInputStream;
+import java.security.MessageDigest;
+import java.util.Formatter;
+
+import java.util.Collection;
+
+public class Main{
+	private String doi;
 	
-	//private MetadataGrabber grabber;
-	//doi grabber?
+	
 	
 	public static void printUsage() {
-		System.err.println("Usage: pdfxmp [options] pdf_file\n" +
-				"Options: \n" + 
-				" [{-f, --force}]\n" +
-				" [{-p, --xmp-file} xmp_file]\n" +
-				" [{-o, --output-dir} output_dir]\n" +
-				" [{-d, --doi} doi]\n" + 
-				" pdf_files");
-	}
-	
-	public static void printFutureUsage() {
-		/* This will be correct once all features are implemented. */
-		System.err.println("Usage: pdfxmp" +
-				" [{-f, --force}]" +
-				" [{-p, --xmp-file} xmp_file]" +
-				" [{-o, --output-dir} output_dir] " +
-				" [{-d, --doi} doi]" + 
-				" [{-s, --search-for-doi]" + 
-				" pdf_files");
+		System.out.println("Usage: pdfxmp [options] pdf_file\n" +
+								 "Options: \n" +
+								 " [{-a, --auto-conv}]\n" +
+								 " [{-b, --bibtex}]\n" +
+								 " [{-c, --conv} key bib]\n" +
+								 " [{-d, --doi}]\n" +
+								 " [{-h, --hash]\n" +
+								 " [{-i, --info}]\n" +
+								 " [{-x, --xmp}]\n" +
+								 " [{-?, --usage}]\n" +							 
+								 " ");
+		/*
+		 * pdfxmp -a pdffile => search for doi, if found, convert into bibtex, save xmp into pdffile
+		 * pdfxmp -b pdffile => print bibtex from xmp
+		 * pdfxmp -c key bib pdffile => convert bib[key] save as xmp into a pdf
+		 * pdfxmp -d pdffile => search for doi
+		 * pdfxmp -h pdffile => print pdfhash 
+		 * pdfxmp -i pdffile => print pdf info and xmp 
+		 * pdfxmp -x pdffile => print xmp 
+		 * pdfxmp -? => print usage 	 
+		 */
 	}
 
 	public static void main(String[] args) {
 		new Main(args);
 	}
 	
-
-	public Main(String[] args) {
+	public Main(String[] args){
 		if (args.length == 0) {
 			printUsage();
 			System.exit(2);
 		}
 		
 		CmdLineParser parser = new CmdLineParser();
-		Option provideXmpOp = parser.addStringOption('p', "xmp-file");
-		Option overwriteOp = parser.addBooleanOption('f', "force");
-		Option outputOp = parser.addStringOption('o', "output-dir");
-		Option doiOp = parser.addStringOption('d', "doi");
-		Option searchOp = parser.addBooleanOption('s', "search-for-doi");
+		Option<Boolean> autoOp = parser.addBooleanOption('a', "auto-conv");
+		Option<Boolean> bibOp = parser.addBooleanOption('b', "bibtex");
+		Option<Boolean> doiOp = parser.addBooleanOption('d', "doi");
+		Option<Boolean> hashOp = parser.addBooleanOption('h', "hash");
+		Option<Boolean> infoOp = parser.addBooleanOption('i', "info");
+		Option<Boolean> xmpOp = parser.addBooleanOption('x', "xmp");
+		Option<Boolean> usageOp = parser.addBooleanOption('?', "usage");
+		
+		Option<String> convOp = parser.addStringOption('c', "conv");
 		
 		try {
 			parser.parse(args);
@@ -85,129 +101,129 @@ public class Main {
 			System.exit(2);
 		}
 		
-		String optionalXmpPath = (String) 
-				                 parser.getOptionValue(provideXmpOp, "");
-		String outputDir       = (String) 
-		 			             parser.getOptionValue(outputOp, "");
-		String explicitDoi     = (String)
-		                         parser.getOptionValue(doiOp, "");
-		boolean useTheForce    = (Boolean) 
-		                         parser.getOptionValue(overwriteOp, Boolean.FALSE);
-		boolean searchForDoi   = (Boolean) 
-		                         parser.getOptionValue(searchOp, Boolean.FALSE);
+		Boolean autoOpValue = parser.getOptionValue(autoOp, Boolean.FALSE);
+		Boolean bibOpValue = parser.getOptionValue(bibOp, Boolean.FALSE);
+		Boolean doiOpValue = parser.getOptionValue(doiOp, Boolean.FALSE);
+		Boolean hashOpValue = parser.getOptionValue(hashOp, Boolean.FALSE);
+		Boolean infoOpValue = parser.getOptionValue(infoOp, Boolean.FALSE);
+		Boolean xmpOpValue = parser.getOptionValue(xmpOp, Boolean.FALSE);
+		Boolean usageOpValue = parser.getOptionValue(usageOp, Boolean.FALSE);
+		String convOpValue = parser.getOptionValue(convOp);
 		
-		if (!explicitDoi.equals("") && searchForDoi) {
-			exitWithError(2, "-d and -s are mutually exclusive options.");
+		String[] otherArgs = parser.getRemainingArgs();
+		if (otherArgs.length < 1){
+			printUsage();
+			System.exit(2);
 		}
 		
-		if (!outputDir.isEmpty() && !new File(outputDir).exists()) {
-			exitWithError(2, "The output directory, '" + outputDir 
-					+ "' does not exist.");
+		String pdf_file = otherArgs[0];
+		
+		// Print Usage Info
+		if (usageOpValue){
+			printUsage();
+			System.exit(0);
 		}
 		
-		byte[] optionalXmpData = null;
+		// print xmp info
+		if (xmpOpValue){
+			PDFTextParser.getPDFXmpMeta(pdf_file);
+			System.exit(0);
+		}
 		
-		if (!optionalXmpPath.equals("")) {
-			/* We will take XMP data from a file. */
-			FileInfo xmpFile = FileInfo.readFileFully(optionalXmpPath);
-			if (xmpFile.missing) {
-				exitWithError(2, "Error: File '" + xmpFile.path 
-						+ "' does not exist.");
-			} else if (xmpFile.error != null) {
-				exitWithError(2, "Error: Could not read '" + xmpFile.path 
-						+ "' because of:\n" + xmpFile.error);
-			}
+		// print pdf info
+		if (infoOpValue){
+			PDFTextParser.getPDFMeta(pdf_file);
+			PDFTextParser.getPDFXmpMeta(pdf_file);
+			System.exit(0);
+		}
+		
+		// print hash
+		if (hashOpValue){
+			System.out.println(toSHA1(pdf_file));
+			System.exit(0);
+		}
+		
+		// search for doi and bibtex
+		if (doiOpValue){
 			
-			optionalXmpData = xmpFile.data;
+			System.exit(0);
 		}
 		
+		// print bibtex from a pdf's xmp
+		if (bibOpValue){
+			
+			System.exit(0);
+		}
+		
+		// auto convert
+		if (autoOpValue){
+			
+			System.exit(0);
+		}
+		
+		// convert
+		
+		
+		
+		System.out.println("autoOpValue: " + autoOpValue);
+      System.out.println("bibOpValue: " + bibOpValue);
+      System.out.println("doiOpValue: " + doiOpValue);
+      System.out.println("hashOpValue: " + hashOpValue);
+		System.out.println("infoOpValue: " + infoOpValue);
+		System.out.println("xmpOpValue: " + xmpOpValue);
+		System.out.println("usageOpValue: " + usageOpValue);
+		
+		System.out.println("remaining args: ");
+        for ( int i = 0; i < otherArgs.length; ++i ) {
+            System.out.println(otherArgs[i]);
+        }
+		System.out.println("=============");
+		
+		
+		
+	}
+	
+	private static String byteArray2Hex(byte[] hash) {
+        Formatter formatter = new Formatter();
+        for (byte b : hash) {
+            formatter.format("%02x", b);
+        }
+        return formatter.toString();
+    }
+	
+	public static String toSHA1(String filename){
+		// return the same hash value
+		//    git hash-object pdf_file;
+		MessageDigest md=null;
+		try{
+			md = MessageDigest.getInstance("SHA-1");
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+		try{
+			FileInputStream in = new FileInputStream(filename);
+			BufferedInputStream buffIn = new BufferedInputStream(in);
+			DigestInputStream dis = new DigestInputStream(buffIn, md);
+			
+			File f = new File(filename);
+			Long fileSize = f.length();
+			
+			String blob = "blob " + fileSize.toString() + '\0';
+			md.update(blob.getBytes());
+						
+			// read the file and update the hash calculation
+         while (dis.read() != -1);
 
-		/* Now we're ready to merge our imported or generated XMP data with what
-		 * is already in each PDF. */
-		
-		for (String pdfFilePath : parser.getRemainingArgs()) {
-			String outputPath = getOutFileName(pdfFilePath);
-			
-			/* Grab the leaf. */
-			if (outputPath.contains(File.separator)) {
-				String[] split = outputPath.split(File.separator);
-				outputPath = split[split.length - 1];
-			}
-			
-			if (!outputDir.isEmpty()) {
-				outputPath = outputDir + File.separator + outputPath;
-			} else {
-				/* Output to the working directory. */
-			}
-			
-			File pdfFile = new File(pdfFilePath);
-			File outputFile = new File(outputPath);
-			
-			String resolvedXmpData = "";
-			
-			if (!pdfFile.exists()) {
-				exitWithError(2, "Error: File '" + pdfFilePath 
-						+ "' does not exist.");
-			}
-			
-			if (outputFile.exists() && !useTheForce) {
-				exitWithError(2, "Error: File '" + outputPath 
-						+ "' already exists.\nTry using -f (force).");
-			}
-			
-			try {
-				if (!useTheForce && isLinearizedPdf(new FileInputStream(pdfFile))) {
-					exitWithError(2, "Error: '" + pdfFilePath + "' is a"
-							+ " linearized PDF and force is not specified."
-							+ " This tool will output non-linearized PDF."
-							+ "\nIf you don't mind that, use -f (force).");
-				}
-			} catch (IOException e) {
-				exitWithError(2, "Error: Could not determine linearization"
-						+ " because of:\n" + e);
-			}
-			
-			if (!explicitDoi.equals("")) {
-				resolvedXmpData = getXmpForDoi(explicitDoi);
-			}
-			
-			try {
-				new File(outputFile.getPath() + ".tmp").deleteOnExit();
-				
-				FileInputStream fileIn = new FileInputStream(pdfFile);
-				FileOutputStream fileOut = new FileOutputStream(outputFile.getPath() + ".tmp");
-				//PdfReader reader = new PdfReader(fileIn);
-				//PdfStamper stamper = new PdfStamper(reader, fileOut);
-				
-				//byte[] merged = reader.getMetadata();
-				
-				//if (optionalXmpData != null) {
-			//		merged = XmpUtils.mergeXmp(merged, optionalXmpData);
-				//}
-				
-				//if (resolvedXmpData != null) {
-					//merged = XmpUtils.mergeXmp(merged, resolvedXmpData);
-				//}
+         // get the hash value as byte array
+         byte[] hash = md.digest();
 
-				//stamper.setXmpMetadata(merged);
-				
-				//stamper.close();
-				//reader.close();
-				
-				//fileIn = new FileInputStream(outputFile.getPath() + ".tmp");
-				//writeInfoDictionary(fileIn, outputFile.getPath(), merged);
-			} catch (IOException e) {
-				exitWithError(2, "Error: Couldn't handle '" + pdfFilePath 
-						+ "' because of:\n" + e);
-			} catch (XmpException e) {
-				exitWithError(2, "Error: Couldn't handle '" + pdfFilePath
-						+ "' because of:\n" + e);
-			} catch (Exception e) {
-				exitWithError(2, "Error: Couldn't write document info dictionary"
-						+ " because of:\n" + e);
-			}
+        return byteArray2Hex(hash);
+		}catch(Exception e){
+			e.printStackTrace();
 		}
-		
+			
+		return "";
 	}
 	
 	public static void writeInfoDictionary(FileInputStream in, 

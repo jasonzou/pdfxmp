@@ -116,20 +116,21 @@ public class PDFTextParser {
 	
 	static void getPDFMeta(String fileName){
 		try{
-		PDDocument document = PDDocument.load(fileName);
-		PDDocumentInformation info = document.getDocumentInformation();
-		System.out.println( "Page Count=" + document.getNumberOfPages() );
-		System.out.println( "Title=" + info.getTitle() );
-		System.out.println( "Author=" + info.getAuthor() );
-		System.out.println( "Subject=" + info.getSubject() );
-		System.out.println( "Keywords=" + info.getKeywords() );
-		System.out.println( "Creator=" + info.getCreator() );
-		System.out.println( "Producer=" + info.getProducer() );
-		System.out.println( "Creation Date=" + info.getCreationDate() );
-		System.out.println( "Modification Date=" + info.getModificationDate());
-		System.out.println( "Trapped=" + info.getTrapped() );
-		}catch(Exception e)
-		{
+			PDDocument document = PDDocument.load(fileName);
+			PDDocumentInformation info = document.getDocumentInformation();
+			System.out.println("============= PDF Information ===============");
+			System.out.println( "Page Count=" + document.getNumberOfPages() );
+			System.out.println( "Title=" + info.getTitle() );
+			System.out.println( "Author=" + info.getAuthor() );
+			System.out.println( "Subject=" + info.getSubject() );
+			System.out.println( "Keywords=" + info.getKeywords() );
+			System.out.println( "Creator=" + info.getCreator() );
+			System.out.println( "Producer=" + info.getProducer() );
+			System.out.println( "Creation Date=" + formatDate(info.getCreationDate()) );
+			System.out.println( "Modification Date=" + formatDate(info.getModificationDate()));
+			System.out.println( "Trapped=" + info.getTrapped() );
+			System.out.println("----------------------------------------------");
+		}catch(Exception e){
 			e.printStackTrace();
 		}
 	}
@@ -144,13 +145,15 @@ public class PDFTextParser {
 		InputStream xmlInputStream = metadata.createInputStream();
 		
 		BufferedReader in = new BufferedReader(new InputStreamReader(xmlInputStream));
+		System.out.println("=========== XMP Information ==========");
 		String inputLine;
 		while ((inputLine = in.readLine()) != null)
 			System.out.println(inputLine);
-		in.close();
+			in.close();
 		}catch(Exception e){
 			e.printStackTrace();
 		}
+		System.out.println("+++++++++++++++++++++++++++++++++++++++");
 		//IoUtils.copy(xmlInputStream, System.out);
 		
 		//or to write new XML metadata
@@ -165,7 +168,7 @@ public class PDFTextParser {
      *
      * @return A string representation of the date.
      */
-    private String formatDate( Calendar date )
+    static private String formatDate( Calendar date )
     {
         String retval = null;
         if( date != null )

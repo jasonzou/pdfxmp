@@ -1178,7 +1178,7 @@ public class XMPUtil {
 	 * @throws TransformerException
 	 *             If the given BibtexEntry is malformed.
 	 */
-	public static void main(String[] args) throws IOException,
+	public static void xmpUtil(String[] args) throws IOException,
 			TransformerException {
 
 		// Don't forget to initialize the preferences
@@ -1304,4 +1304,8 @@ public class XMPUtil {
 			return false;
 		}
 	}
+	
+	public static void main(String[] args) throws IOException, TransformerException {
+		  xmpUtil(args);
+   }
 }
