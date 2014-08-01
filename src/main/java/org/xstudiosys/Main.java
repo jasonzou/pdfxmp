@@ -63,7 +63,7 @@ public class Main{
 								 "Options: \n" +
 								 " [{-a, --auto-conv}]\n" +
 								 " [{-b, --bibtex}]\n" +
-								 " [{-c, --conv} key bib]\n" +
+								 " [{-c, --conv} bib]\n" +
 								 " [{-d, --doi}]\n" +
 								 " [{-h, --hash]\n" +
 								 " [{-i, --info}]\n" +
@@ -224,7 +224,32 @@ public class Main{
 		}
 		
 		// convert
-		
+		if (convOpValue != null){
+			System.out.println("convOp: " + convOpValue);
+			try{
+				BufferedReader br = new BufferedReader(new FileReader(convOpValue));
+				String line = null;
+				String bibtex = null;
+				StringBuilder sb = new StringBuilder();
+				while ((line = br.readLine()) != null) {
+					sb.append(line);
+				}
+				br.close();
+				bibtex = sb.toString();
+				
+				
+				BibtexEntry result = BibtexParser.singleFromString(bibtex);
+				
+				if (result == null) {
+					System.err.println("Could not find a valid BibtexEntry ");
+				} else {
+					XMPUtil.writeXMP(new File(pdf_file), result, null);
+					System.out.println("XMP written.");
+				}
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+		}
 		
 		
 		System.out.println("autoOpValue: " + autoOpValue);
@@ -235,6 +260,7 @@ public class Main{
 		System.out.println("xmpOpValue: " + xmpOpValue);
 		System.out.println("usageOpValue: " + usageOpValue);
 		
+		System.out.println("convOp: " + convOpValue);
 		System.out.println("remaining args: ");
         for ( int i = 0; i < otherArgs.length; ++i ) {
             System.out.println(otherArgs[i]);
